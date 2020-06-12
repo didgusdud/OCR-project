@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-def order_points(pts):
+def points(pts):
     rect = np.zeros((4,2), dtype = "float32")
 
     s = pts.sum(axis = 1)
@@ -15,9 +15,9 @@ def order_points(pts):
 
     return rect
 
-def auto_scan_image():
+def scanImage():
     image = cv2.imread('img_04.jpg')
-    orig = image.copy()
+    origin = image.copy()
 
     r = 800.0 / image.shape[0]
     dim = (int(image.shape[1] * r), 800)
@@ -27,7 +27,7 @@ def auto_scan_image():
     gray = cv2.GaussianBlur(gray, (3,3), 0)
     edged = cv2.Canny(gray, 75, 200)
 
-    print("STEP 1: Edge Detection")
+    #Edge
 
     cv2.namedWindow('Image', cv2.WINDOW_NORMAL)
     cv2.namedWindow('Edged', cv2.WINDOW_NORMAL)
@@ -49,7 +49,7 @@ def auto_scan_image():
             screenCnt = approx
             break
 
-    print ("STEP 2: Find Contours of Paper")
+    #Contours 
 
     cv2.drawContours(image, [screenCnt], -1, (0, 255, 0), 2)
     cv2.imshow("Outline",image)
@@ -57,7 +57,7 @@ def auto_scan_image():
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     cv2.waitKey(1)
-    rect = order_points(screenCnt.reshape(4, 2) / r)
+    rect = points(screenCnt.reshape(4, 2) / r)
     (topLeft, topRight, bottomRight, bottomLeft) = rect
     
     w1 = abs(bottomRight[0] - bottomLeft[0])
@@ -67,16 +67,19 @@ def auto_scan_image():
 
     maxWidth = max([w1, w2])
     maxHeight = max([h1, h2])
+    
+    #회전변환 좌표 수정
     dst = np.float32([[0,0], [0, maxHeight-1], [maxWidth-1, maxHeight-1],[maxWidth-1, 0] ])
     #dst = np.float32([[0,0], [maxHeight-1, 0], [maxHeight-1,maxWidth-1], [0, maxWidth-1]])
     
 
     N = cv2.getPerspectiveTransform(rect, dst)
 
-    warped = cv2.warpPerspective(orig, N, (maxWidth, maxHeight))
+    warped = cv2.warpPerspective(origin, N, (maxWidth, maxHeight))
 
 
-    print ("STEP 3: Apply perspective transform")
+    #transform
+    
     cv2.imshow("Warped", warped)
 
     cv2.waitKey(0)
@@ -87,8 +90,8 @@ def auto_scan_image():
 
     warped = cv2.adaptiveThreshold(warped, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 21, 10)
 
-    print("STEP 4: Apply Adaptive Threshold")
-    cv2.imshow("Original", orig)
+    #Adaptive Threshold
+    cv2.imshow("Original", origin)
     cv2.imshow("Scanned", warped)
     cv2.imwrite('scannedImage.png', warped)
 
@@ -97,7 +100,7 @@ def auto_scan_image():
 
 
 if __name__ == '__main__':
-    auto_scan_image()
+    scanImage()
 
 
 

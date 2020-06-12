@@ -16,19 +16,21 @@ def points(pts):
 
     return rect
 
-def auto_scan_image():
+def scanImage():
+    #이미지 입력
     image = cv2.imread('image_04.jpg')
-    orig = image.copy()
+    origin = image.copy()
 
     r = 800.0 / image.shape[0]
     dim = (int(image.shape[1] * r), 800)
     image = cv2.resize(image, dim, interpolation = cv2.INTER_AREA)
 
+    #BGR->GRAYSCALE로 변환
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (3,3), 0)
     edged = cv2.Canny(gray, 75, 200)
 
-    print("STEP 1: Edge Detection")
+    #Edge
 
     cv2.namedWindow('Image', cv2.WINDOW_NORMAL)
     cv2.namedWindow('Edged', cv2.WINDOW_NORMAL)
@@ -50,7 +52,7 @@ def auto_scan_image():
             screenCnt = approx
             break
 
-    print ("STEP 2: Find Contours of Paper")
+    #Contours
 
     cv2.drawContours(image, [screenCnt], -1, (0, 255, 0), 2)
     cv2.imshow("Outline",image)
@@ -58,6 +60,7 @@ def auto_scan_image():
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     cv2.waitKey(1)
+    
     rect = points(screenCnt.reshape(4, 2) / r)
     (topLeft, topRight, bottomRight, bottomLeft) = rect
 
@@ -73,21 +76,23 @@ def auto_scan_image():
 
     N = cv2.getPerspectiveTransform(rect, dst)
 
-    warped = cv2.warpPerspective(orig, N, (maxWidth, maxHeight))
+    warped = cv2.warpPerspective(origin, N, (maxWidth, maxHeight))
 
-    print ("STEP 3: Apply perspective transform")
+    #transform
+    
     cv2.imshow("Warped", warped)
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     cv2.waitKey(1)
-
+    #BGR->GRAYSCALE로 변환
     warped = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
-
+    #Threshold로 변환
     warped = cv2.adaptiveThreshold(warped, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 21, 10)
 
-    print("STEP 4: Apply Adaptive Threshold")
-    cv2.imshow("Original", orig)
+    #Adaptive threshold
+    
+    cv2.imshow("Original", origin)
     cv2.imshow("Scanned", warped)
     cv2.imwrite('scannedImage.png', warped)
 
@@ -96,7 +101,7 @@ def auto_scan_image():
 
 
 if __name__ == '__main__':
-    auto_scan_image()
+    scanImage()
 
 
 
